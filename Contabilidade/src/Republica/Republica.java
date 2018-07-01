@@ -1,35 +1,50 @@
 
 package Republica;
 
-import Excecoes.DadosPessoaisIncompletos;
+import Contabilidade.*;
+import Excecoes.DadosPessoaisIncompletosException;
+import Excecoes.NomeRepublicaNaoInformadoException;
 import java.io.*;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
-
+import java.util.Date;
 
 public class Republica {
     
-    LinkedList<Estudante> ocupantes  = new LinkedList<>();
-        
-    public void print(){
-      
-        Iterator it = ocupantes.iterator();
-        Estudante aux;
-        while(it.hasNext()){
-            aux = (Estudante) it.next();
-            System.out.println(aux.nome);
-        
+    private LinkedList<Estudante> ocupantes  = new LinkedList<>();
+    private Contabilidade cont = null;
+ 
+    private String nome;
+    
+    public Republica(String nome){
+        this.nome = nome;
+    }
+    public String getNome(){
+       return this.nome;
+    }
+    public void setNome(String nome) throws NomeRepublicaNaoInformadoException{
+        if(nome.equals("")){
+          throw new NomeRepublicaNaoInformadoException();
         }
-        File file = new File("registros.txt");
+        this.nome = nome;
+    }
+    public LinkedList<Estudante> getOcupantes() {
+        return ocupantes;
+    }
+
+    public void carregarDados(){
+        
+        String[] dados;
+        File file = new File("alunos.txt");
         try {
             BufferedReader br = new BufferedReader(new FileReader(file));
             String tmp;
             try {
                 while((tmp = br.readLine())!= null){
-                    System.out.println(tmp);
+                     dados = tmp.split(";");
+                     cadastrarOcupante(dados[0],dados[1],Float.parseFloat(dados[2]));
                 }
             } catch (IOException ex) {
                 Logger.getLogger(Republica.class.getName()).log(Level.SEVERE, null, ex);
@@ -37,23 +52,23 @@ public class Republica {
             
             
         } catch (FileNotFoundException ex) {
-            Logger.getLogger(Republica.class.getName()).log(Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(null, "Arquivo de dados nao encontrado");
+            return;
         }
-
+        
+        JOptionPane.showMessageDialog(null,"Dados carregados com sucesso");
+    }
+    public Contabilidade getCont(){
+        return this.cont;
     }
     
-    
-    public void cadastrarOcupante(){
+    public void cadastrarOcupante() throws DadosPessoaisIncompletosException{
       
         String nome = JOptionPane.showInputDialog("Informe o nome do ocupante: ");
         String email = JOptionPane.showInputDialog("Informe o email do ocupante");
         String rendstr = JOptionPane.showInputDialog("Informe o total de rendimentos do ocupante: ");
-        if("".equals(nome)||"".equals(email)||"".equals(rendstr)){
-            try {
-                throw new DadosPessoaisIncompletos();
-            } catch (DadosPessoaisIncompletos ex) {
-                Logger.getLogger(Republica.class.getName()).log(Level.SEVERE, null, ex);
-            }
+        if("".equals(nome)||"".equals(email)||"".equals(rendstr)){   
+                throw new DadosPessoaisIncompletosException();
         }
         float rend = Float.parseFloat(rendstr);
         Estudante ocupante = new Estudante(nome,email,rend);
@@ -69,18 +84,101 @@ public class Republica {
         } catch (IOException e) {
             JOptionPane.showMessageDialog(null,"Erro: "+e);
         }
-        if (JOptionPane.showConfirmDialog(null, "Deseja cadastrar outro ocupante ?", "Confirmação",
-        JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+           String[] options = new String[2];
+           options[0] = "Sim";
+           options[1] = "Não";  
+            if (JOptionPane.showOptionDialog(null,"Deseja cadastrar outros ocupantes nessa mesma republica ?","Confirmação", 0,JOptionPane.INFORMATION_MESSAGE,null,options,null) == JOptionPane.YES_OPTION) {
             cadastrarOcupante();
-        }
+            }
     }
     
-    public static void main(String args[]){
+    public void cadastrarOcupante(String nome, String email, float rendt){
+        //Método de cadastro usado pela função de carregar dados de arquivo
+        Estudante ocupante = new Estudante(nome,email,rendt);
+        ocupantes.add(ocupante);
+
+    }
+    
+    public void cadastrarContabilidade(){
         
-        Republica r = new Republica();   
-        r.cadastrarOcupante();
-        //r.print();
-    
+	Date data = new Date();            
+        if(cont==null){
+            cont = new Contabilidade(ocupantes,data);
+        }      
     }
     
+    public void removerOcupantes() throws DadosPessoaisIncompletosException{
+       String nomeE = JOptionPane.showInputDialog(null,"Digite o nome do ocupante a ser removido");
+       if(nomeE.equals("")){
+          throw new DadosPessoaisIncompletosException();
+       }
+       
+       Estudante resposta = null;
+       for(Estudante tmp : ocupantes){
+          if(tmp.getNome().equals(nomeE)){resposta=tmp;}       
+       }
+       if(resposta==null){
+          JOptionPane.showMessageDialog(null,"Pessoa não encontrada, por favor tente novamente");
+       }else{
+          ocupantes.remove(resposta);
+          if(cont!=null){
+               cont.setEstudantes(ocupantes);
+          }
+          JOptionPane.showMessageDialog(null,"Ocupante removido");
+       
+       }
+     
+       String[] options = new String[2];
+       options[0] = "Sim";
+       options[1] = "Não";  
+       if (JOptionPane.showOptionDialog(null,"Deseja remover outros ocupantes nessa mesma republica ?","Confirmação", 0,JOptionPane.INFORMATION_MESSAGE,null,options,null) == JOptionPane.YES_OPTION) {
+         removerOcupantes();
+       }
+  
+    } 
+    public void alterarOcp() throws DadosPessoaisIncompletosException{
+        
+       String nomeE = JOptionPane.showInputDialog(null,"Digite o nome do ocupante a ser alterado");
+       if(nomeE.equals("")){
+          throw new DadosPessoaisIncompletosException();
+       }
+       
+       Estudante resposta = null;
+       for(Estudante tmp : ocupantes){
+          if(tmp.getNome().equals(nomeE)){resposta=tmp;}       
+       }
+       if(resposta==null){
+          JOptionPane.showMessageDialog(null,"Pessoa não encontrada, por favor tente novamente");
+       }else{
+           
+         String novoN = JOptionPane.showInputDialog("Digite o novo nome do ocupante");
+         if(novoN.equals("")){
+             throw new DadosPessoaisIncompletosException();
+         }
+         String novoE = JOptionPane.showInputDialog("Digite o novo email do ocupante");
+         if(novoE.equals("")){
+             throw new DadosPessoaisIncompletosException();
+         }
+         String novoRS = JOptionPane.showInputDialog("Digite o novo rendimento do ocupante");
+         if(novoRS.equals("")){
+             throw new DadosPessoaisIncompletosException();
+         } 
+         float novoR = Float.parseFloat(novoRS);
+         resposta.setNome(novoN);
+         resposta.setEmail(novoE);
+         resposta.setTotalRend(novoR);
+
+         JOptionPane.showMessageDialog(null,"Dados alterados com sucesso");
+       }
+     
+       String[] options = new String[2];
+       options[0] = "Sim";
+       options[1] = "Não";  
+       if (JOptionPane.showOptionDialog(null,"Deseja alterar outros ocupantes nessa mesma republica ?","Confirmação", 0,JOptionPane.INFORMATION_MESSAGE,null,options,null) == JOptionPane.YES_OPTION) {
+         alterarOcp();
+       } 
+    
+    
+    }
+
 }

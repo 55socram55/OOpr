@@ -1,91 +1,134 @@
 
 package Contabilidade;
 
+import static Contabilidade.Despesas.categorias;
+import Excecoes.DadosCategoriaIncompletosException;
 import java.util.LinkedList;
 import javax.swing.JOptionPane;
 
 
 public class Despesas {
     
-    String desc;
-    float valor;
-    Categoria cat;
+    private final String desc;
+    private final float valor;
+    private final Categoria cat;
     
-    LinkedList <Categoria> categorias= new LinkedList<>();
+    static LinkedList <Categoria> categorias= new LinkedList<>();
     
-    public Despesas(String desc, float valor, Categoria cat){
+    protected Despesas(String desc, float valor, Categoria cat){
          this.desc = desc;
          this.valor = valor;
          this.cat = cat;
     }
+
+    protected String getDesc() {
+        return desc;
+    }
+
+    protected float getValor() {
+        return valor;
+    }
+
+    protected Categoria getCat() {
+        return cat;
+    }
     
-    public void cadastrarCategoria(){
+    protected static LinkedList<Categoria> getCategorias() {
+        return categorias;
+    }
+    
+    protected static Categoria procurarCategoria(String desc){   
+        Categoria resposta = null;
+        for (Categoria tmp : categorias) {
+            if(tmp.getDesc().equals(desc)){
+                resposta = tmp;
+                return resposta;
+            }
+            if(!(tmp.getSubCats().isEmpty())){ 
+              for(Categoria sub: tmp.getSubCats()){
+                        if(sub.getDesc().equals(desc)){
+                           resposta = sub;
+                           return resposta;
+                       }               
+                }
+            } 
+            
+        }
+      
+        return resposta;
+    }
+    
+    public static void cadastrarCategoria() throws DadosCategoriaIncompletosException{
         
-          Categoria[] categoriasA = categorias.toArray(new Categoria[categorias.size()]);     
+
+        
+          LinkedList <String> descCategorias = new LinkedList<>();
+                    
+          for(Categoria tmp : categorias){
+             descCategorias.add(tmp.getDesc());
+          }
+    
+          descCategorias.addFirst("NENHUMA");
+          String[] opcoesPossiveis = descCategorias.toArray(new String[descCategorias.size()]);
         
           String desc = JOptionPane.showInputDialog("Informe a descricao da categoria: ");
-          
-          Categoria tmp;
+          if(desc.equals("")){
+                throw new DadosCategoriaIncompletosException();
+          }
           
           Object resposta = JOptionPane.showInputDialog(null,               
 					"Selecione a categoria a qual ela pertence:", 
 					"Categoria", 
 					JOptionPane.QUESTION_MESSAGE, 
 					null, 
-					categoriasA, 
-                                        "NENHUMA");
+					opcoesPossiveis, 
+                                        opcoesPossiveis[0]);
+
           
           Categoria cat =  new Categoria(desc);
-          categorias.add(cat);
-          
-          if(!("NENHUMA".equals((String)resposta))){
-                                
-              tmp = (Categoria)resposta;
-              tmp.subC = cat;
-
+           
+          Categoria tmp;
+          if(!("NENHUMA".equals((String)resposta))){   
+              tmp = procurarCategoria((String)resposta);
+              tmp.addSubCat(cat);
             
-          }
-//          
-//        Object[] opcoesPossiveis = {"--- Selecione uma opcao ---",
-//				"Cadastrar contribuinte", 
-//				                    "Cadastrar Rendimento", 
-//				                    "Cadastrar Deducao",
-//				                    "Cadastrar Dependente",
-//				                    "Calcular imposto", 
-//				                    "Sair"};
-//		Object opcaoDefault = opcoesPossiveis[0];
-//		Object opcaoSelecionada = null;
-//		do {
-			/*opcaoSelecionada =*/ 
-//			switch ((String) opcaoSelecionada) {
-//			case "Cadastrar contribuinte":
-//				cadastrarContribuinte();
-//			    break;
-//			
-//			case "Cadastrar Rendimento":
-//				cadastrarRendimento();
-//				break;
-//
-//			default:
-//				break;
-//			}
-//		} while (!((String)opcaoSelecionada).equals((String)opcoesPossiveis[6]));
-//	}
-
-        
-        
-//        
-//        if("".equals(nome)||"".equals(email)||"".equals(rendstr)){
-//                  
-//        }
-//        float rend = Float.parseFloat(rendstr);
-//        Categoria cat = new Categoria();
-//        ocupantes.add(ocupante);
-//        if (JOptionPane.showConfirmDialog(null, "Deseja cadastrar outro ocupante ?", "Confirmação",
-//        JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
-//            cadastrarOcupante();
-//        }
-    }
+          }else{categorias.add(cat);}
+          
+           String[] options = new String[2];
+           options[0] = "Sim";
+           options[1] = "Não";  
+            if (JOptionPane.showOptionDialog(null,"Deseja cadastrar outra categoria ?","Confirmação", 0,JOptionPane.INFORMATION_MESSAGE,null,options,null) == JOptionPane.YES_OPTION) {
+            cadastrarCategoria();
+            }
     
+    }
+     public static void removerCategoria() throws DadosCategoriaIncompletosException{
+    
+       String descC = JOptionPane.showInputDialog(null,"Digite a descricao da categoria a ser removida");
+       if(descC.equals("")){
+           throw new DadosCategoriaIncompletosException();
+       }
+       Categoria resposta = null;
+       for(Categoria tmp : categorias){
+          if(tmp.getDesc().equals(descC)){resposta=tmp;}       
+       }
+       if(resposta==null){
+          JOptionPane.showMessageDialog(null,"Categoria não encontrada, por favor tente novamente");
+       }else{
+          categorias.remove(resposta); 
+          JOptionPane.showMessageDialog(null,"Categoria removida");
+       }
+     
+       String[] options = new String[2];
+       options[0] = "Sim";
+       options[1] = "Não";  
+       if (JOptionPane.showOptionDialog(null,"Deseja remover outras categorias ?","Confirmação", 0,JOptionPane.INFORMATION_MESSAGE,null,options,null) == JOptionPane.YES_OPTION) {
+         removerCategoria();
+       }
+    
+    
+    
+    }
+
     
 }
